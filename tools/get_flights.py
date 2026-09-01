@@ -6,7 +6,6 @@ BASE_URL = "https://aerodatabox.p.rapidapi.com"
 
 
 def _fetch_departures(airport, date, headers):
-    url = f"{BASE_URL}/flights/airports/iata/{airport}/{date}T00:00/{date}T23:59"
     params = {
         "direction": "Departure",
         "withLeg": "true",
@@ -14,9 +13,46 @@ def _fetch_departures(airport, date, headers):
         "withCargo": "false",
         "withPrivate": "false",
     }
-    resp = requests.get(url, headers=headers, params=params, timeout=10)
-    resp.raise_for_status()
-    return resp.json().get("departures", []) or []
+
+    departures = []
+
+    time_ranges = [
+        ("00:00", "06:00"),
+        ("06:00", "12:00"),
+        ("12:00", "18:00"),
+        ("18:00", "23:59"),
+    ]
+
+    for start_time, end_time in time_ranges:
+        url = (
+            f"{BASE_URL}/flights/airports/iata/"
+            f"{airport}/{date}T{start_time}/{date}T{end_time}"
+        )
+
+        resp = requests.get(
+            url,
+            headers=headers,
+            params=params,
+            timeout=10,
+        )
+        resp.raise_for_status()
+
+        departures.extend(
+            resp.json().get("departures", []) or []
+        )
+
+    # Remove duplicate flights
+    unique_departures = {}
+    for flight in departures:
+        key = (
+            flight.get("number"),
+            (flight.get("departure") or {})
+            .get("scheduledTime", {})
+            .get("local"),
+        )
+        unique_departures[key] = flight
+
+    return list(unique_departures.values())
 
 
 def _to_offer(flight, expected_destination):
