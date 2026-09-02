@@ -12,3 +12,13 @@ specifies the input and output formats for a structured data flow with LLMs and 
 - **`get_weather`:** Accumulates weather details using each day's temperature, precipitation chances into account. Uses free open-meteo api for fetching data
 - **`get_places`:** Calls Google Places API (New) to fetch up to 10 places matching a city and user interests. Returns each place's name, address, rating, and price level when available.
 - **`get_flights`:** Calls AeroDataBox API via Rapid API to get flights on a particular date from origin i.e. departure location to destination location. Returns flight details(flight no., airline, carrier, departure airport, arrival airpot, departure, arrival, status) for max upto 10 flights between origin and destination location. Doesnt include flight prices yet.
+
+## Agent
+
+`Problem Encountered -`
+
+Agent has no memory i.e. no context of previous conversations
+
+Another tradeoff upcoming with this, till now groq recieves: sys. propmt + tools results + user input; but if we include short term memory for context preservation it will receive: sys. prompt + tools results + history + trip state + user input. In other terms token usage would increase
+
+Also, the system prompt needs to be shortened such that it doesnt use up token limits.
