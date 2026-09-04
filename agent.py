@@ -17,7 +17,7 @@ from schemas.itinerary import Itinerary
 import config
 
 
-# ---------------- TripState ----------------
+# TripState
 class TripState(BaseModel):
     origin: Optional[str] = None
     destination: Optional[str] = None
@@ -34,7 +34,7 @@ class TripState(BaseModel):
         return all([self.origin, self.destination, self.departure_date])
 
 
-# ---------------- TripState store (session-scoped, app-level, not LLM messages) ----------------
+# TripState store
 _trip_states: dict[str, TripState] = {}
 
 def get_trip_state(session_id: str) -> TripState:
@@ -43,14 +43,13 @@ def get_trip_state(session_id: str) -> TripState:
     return _trip_states[session_id]
 
 
-# ---------------- TripState extraction (naive, application-side, not an LLM tool) ----------------
+# TripState extraction
 ACTION_VERBS = {"leave", "go", "fly", "travel", "depart", "return", "visit", "head", "get", "plan"}
 
 def extract_trip_updates(user_message: str) -> dict:
     msg = user_message.strip()
     changes = {}
 
-    # Origin: "from Delhi", "travelling from Delhi"
     from_match = re.search(
         r"\bfrom\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)\b",
         msg,
@@ -61,7 +60,6 @@ def extract_trip_updates(user_message: str) -> dict:
         if origin_val.lower() not in {"here", "there", "home"}:
             changes["origin"] = origin_val
 
-    # Destination: "to Goa", "trip to Goa", avoiding verbs like "to leave" or "to plan"
     to_matches = re.finditer(
         r"\bto\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)\b",
         msg,
@@ -74,7 +72,6 @@ def extract_trip_updates(user_message: str) -> dict:
             changes["destination"] = candidate
             break
 
-    # Departure date: "leave on 2026-09-15"
     departure_match = re.search(
         r"(?:leave|depart|departure)\s+(?:on|date\s+is)?\s*(\d{4}-\d{2}-\d{2})",
         msg,
@@ -83,7 +80,6 @@ def extract_trip_updates(user_message: str) -> dict:
     if departure_match:
         changes["departure_date"] = departure_match.group(1)
 
-    # Return date: "return on 2026-09-20"
     return_match = re.search(
         r"(?:return|come\s+back)\s+(?:on|date\s+is)?\s*(\d{4}-\d{2}-\d{2})",
         msg,
@@ -92,7 +88,6 @@ def extract_trip_updates(user_message: str) -> dict:
     if return_match:
         changes["return_date"] = return_match.group(1)
 
-    # Interests: stop at punctuation or common connecting conjunctions
     interest_match = re.search(
         r"(?:interested\s+in|i\s+like|interests?\s+(?:are|include))\s+([^.\n]+)",
         msg,
@@ -119,7 +114,7 @@ def apply_trip_updates(session_id: str, user_message: str):
     trip_state.update_from(changes)
 
 
-# ---------------- System prompt ----------------
+# System prompt
 SYSTEM_PROMPT_TEMPLATE = """
 You are a travel planning assistant. Gather trip details, call tools
 only when necessary, and produce a plain-text draft itinerary.
@@ -144,20 +139,20 @@ RULES:
 """
 
 
-# ---------------- Custom agent state (adds trip_state_json to AgentState) ----------------
+# Custom agent state (adds trip_state_json to AgentState)
 class TravelAgentState(AgentState):
     trip_state_json: str
 
 
-# ---------------- Middleware: inject TripState into system prompt each call ----------------
+# Middleware: inject TripState into system prompt on each call
 @dynamic_prompt
 def inject_trip_state(request: ModelRequest) -> str:
     trip_json = request.state.get("trip_state_json", "{}")
     return SYSTEM_PROMPT_TEMPLATE.format(trip_state_json=trip_json)
 
 
-# ---------------- Middleware: bound conversation history ----------------
-MAX_MESSAGES = 12  # ~6 turns
+# Middleware: bound conversation history
+MAX_MESSAGES = 12
 
 @before_model
 def trim_messages(state: TravelAgentState, runtime: Runtime):
@@ -168,11 +163,11 @@ def trim_messages(state: TravelAgentState, runtime: Runtime):
     return {"messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *trimmed]}
 
 
-# ---------------- Build the agent (Groq, tool-calling, memory via checkpointer) ----------------
+# the agent Groq
 checkpointer = InMemorySaver()
 
 agent = create_agent(
-    model=config.GROQ_MODEL,          # e.g. "groq:llama-3.3-70b-versatile"
+    model=config.GROQ_MODEL,
     tools=All_Tools,
     state_schema=TravelAgentState,
     middleware=[inject_trip_state, trim_messages],
@@ -180,7 +175,7 @@ agent = create_agent(
 )
 
 
-# ---------------- Gemini structured-output formatter (no tools, separate step) ----------------
+# Gemini structured output formatter
 def format_itinerary(draft_text: str, trip_state: TripState) -> Itinerary:
     gemini = ChatGoogleGenerativeAI(model=config.GEMINI_MODEL, temperature=0)
     structured_llm = gemini.with_structured_output(Itinerary)
@@ -191,7 +186,7 @@ def format_itinerary(draft_text: str, trip_state: TripState) -> Itinerary:
     )
 
 
-# ---------------- Entry point ----------------
+# Entry point
 def handle_user_message(session_id: str, user_message: str):
     apply_trip_updates(session_id, user_message)
     trip_state = get_trip_state(session_id)
