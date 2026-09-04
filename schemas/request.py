@@ -6,6 +6,5 @@ class TripRequest(BaseModel):
     destination_city: str = Field(..., description="City being visited")
     start_date: str = Field(..., description="Trip start date, YYYY-MM-DD")
     end_date: str = Field(..., description="Trip end date, YYYY-MM-DD")
-    total_budget: float = Field(..., description="Total trip budget in INR")
     interests: str = Field(..., description="Comma separated interests, e.g. 'beaches, food, nightlife'")
     travelers: int = Field(default=1, description="Number of people traveling")

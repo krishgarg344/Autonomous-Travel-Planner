@@ -1,7 +1,7 @@
 # Autonomous-Travel-Planner
 
 This is an Agentic AI platform that automates your trip planning. It brings the long and tiring task of surfing through many websites whether for looking for places to stay, activities to do, cafes hotels, scenic points, weather conditions etc. to just one prompt.
-It gives you personalized tailored response according to your schedule and your budget requirements.
+It gives personalized responses based on the user's travel dates, destination, interests, and other provided preferences.
 
 ## Schemas
 
@@ -28,23 +28,28 @@ Also, the system prompt needs to be shortened such that it doesnt use up token l
 
 Agent has two memory's - one is TripState which contains all trip information like origin, destination, interests etc. while other is LangGraph's InMemorySaver for storing recent chat history. Currently we handle manually the size of in chat memory by keeping only last 12 mesages to reduce input tokens. TripState gets updated at each query if anything changed.
 
-The input query is handled by Groq which then decides which tool to call and passes its outputs to Gemini which does the task of final itinerary drafting.
+The user's query is first processed by Groq, which acts as the tool calling agent. Based on the current TripState and conversation context, it decides whether tools such as flights, weather, or places are required. Their results are incorporated into a draft itinerary, which is then passed to Gemini for structured itinerary generation.
 
 
 `Architecture -`
 
 ```mermaid
 flowchart TD
-    A[Session ID] --> B[TripState<br>Structured State]
-    A --> C[LangGraph<br>Conversation]
-    
-    C -- Max 12 Messages --> D[Groq]
-    B --> D
-    
-    D --> E[Tools]
-    E --> F[Draft]
-    F --> G[Gemini]
-    G --> H[Itinerary]
+    A[User] --> B[Session ID]
+    B --> C[TripState]
+    B --> D[Conversation Memory]
+
+    C --> E[Groq Agent]
+    D --> E
+
+    E --> F{Need Tool?}
+    F -- No --> G[Draft Itinerary]
+    F -- Yes --> H[Weather / Places / Flights]
+    H --> E
+
+    G --> I[Gemini]
+    I --> J[Structured Itinerary]
+    J --> K[Streamlit UI]
 ```
 
 
