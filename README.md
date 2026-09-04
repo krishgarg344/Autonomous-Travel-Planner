@@ -1,4 +1,4 @@
-# Autonomous-Travel-Planner
+# Autonomous Travel Planner
 
 This is an Agentic AI platform that automates your trip planning. It brings the long and tiring task of surfing through many websites whether for looking for places to stay, activities to do, cafes hotels, scenic points, weather conditions etc. to just one prompt.
 It gives personalized responses based on the user's travel dates, destination, interests, and other provided preferences.
