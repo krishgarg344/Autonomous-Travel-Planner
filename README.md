@@ -3,6 +3,10 @@
 This is an Agentic AI platform that automates your trip planning. It brings the long and tiring task of surfing through many websites whether for looking for places to stay, activities to do, cafes hotels, scenic points, weather conditions etc. to just one prompt.
 It gives personalized responses based on the user's travel dates, destination, interests, and other provided preferences.
 
+## Demo video
+
+You can watch the full video demonstration on [Google Drive](https://1drv.ms/v/c/6f8a013f1aae606d/IQC_JS6TTzyrTZB8hEe5bFFAAQhJjeVJQGpD_TtaV-3KanQ?e=Y6VhFA)
+
 ## Schemas
 
 specifies the input and output formats for a structured data flow with LLMs and smooth data delivery
